@@ -1,0 +1,77 @@
+#include <SoftwareSerial.h>
+SoftwareSerial mySerial(10, 11);//10(rx)=>tx 11(tx)=>rx
+void readEndSerial(){
+  while(mySerial.available()>0){mySerial.read();}
+}
+
+bool isOK(char listChar[],int lenghthATCommand){
+  bool stt = false;
+  int fullLenghth = lenghthATCommand + 2;
+  int numOfChar = 0;
+  while(mySerial.available()>0){
+    char ch = mySerial.read();
+    if((numOfChar >= fullLenghth)&&(ch != listChar[numOfChar - fullLenghth])){
+      readEndSerial();
+      return false;
+    }
+    if(numOfChar - 1 == fullLenghth){
+      readEndSerial();
+      return true;
+    }
+    numOfChar++;
+    delay(3);
+  }
+}
+void setup() {
+   Serial.begin(9600);
+   Serial.println("Ready to Command");
+   mySerial.begin(9600);
+}
+
+void loop() {
+  Serial.print("First command: ");
+  Serial.write("AT\n");
+  mySerial.write("AT\n");
+  delay(200);
+  if(mySerial.available() > 0){
+    //Serial.println("Some do send");
+    Serial.println("Delay 200ms");
+    delay(200);
+    char result[3] = "OK";
+    int lengthATCommand = 2; // ex 'AT/n' has length = 2
+    bool isTrue = isOK(result, lengthATCommand);
+    Serial.print(isTrue ? "AT is OK" : "AT is Error");
+    Serial.println();
+  }
+  Serial.print("Command call 0965637016: ");
+  Serial.write("ATD0965637016;\n");
+  mySerial.write("ATD0965637016;\n");
+  delay(200);
+  if(mySerial.available() > 0){
+    Serial.println("Delay 200ms");
+    delay(200);
+    char result[3] = "OK";
+    int lengthATCommand = 14;
+    bool isATOK = isOK(result, lengthATCommand);
+    Serial.print(isATOK ? "Calling is OK" : "Calling is Error");
+    Serial.println();
+  }
+
+  Serial.println("End calling in 10s");
+  delay(10000);
+  Serial.write("ATH\n");
+  mySerial.write("ATH\n");
+  delay(200);
+  if(mySerial.available() > 0){
+    Serial.println("Delay 200ms");
+    delay(200);
+    char result[3] = "OK";
+    int lengthATCommand = 3;
+    bool isATOK = isOK(result, lengthATCommand);
+    Serial.print(isATOK ? "End call" : "Error");
+    Serial.println();
+  }
+  Serial.println("Delay 15s");
+  delay(1500000);
+  Serial.println("End delay");
+}

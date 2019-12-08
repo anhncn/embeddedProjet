@@ -1,0 +1,300 @@
+#include <SoftwareSerial.h>
+SoftwareSerial mySerial(10, 11);//10(rx)=>tx 11(tx)=>rx
+char locationGSM[60] = "";
+// read buffer of Serial
+void readEndSerial(){
+  while(mySerial.available()>0)
+  {
+    mySerial.read();
+  }
+}
+// read buffer of Serial and show its
+void readAndShowEndSerial(){
+  while(mySerial.available()>0)
+  {
+    Serial.write(mySerial.read());
+  }
+}
+// Check result of command is Ok
+bool isOK(char listChar[],int lenghthATCommand){
+  bool stt = false;
+  int fullLenghth = lenghthATCommand + 2;
+  int numOfChar = 0;
+  while(mySerial.available()>0){
+    char ch = mySerial.read();
+    if((numOfChar >= fullLenghth)&&(ch != listChar[numOfChar - fullLenghth])){
+      readEndSerial();
+      return false;
+    }
+    if(numOfChar - 1 == fullLenghth){
+      readEndSerial();
+      return true;
+    }
+    numOfChar++;
+    delay(3);
+  }
+}
+
+void WaitMySerialAvailable(){
+  Serial.println();
+  Serial.println("Wait buffer serial is availble...");
+  while(mySerial.available() <= 0){
+    delay(200);
+  }
+  delay(2000);
+}
+
+void EnableGPS(){ // total 0.4s
+  // Enable GPRS
+  char command[] = "AT+CGATT=1\n";
+  Serial.write(command);
+  mySerial.write(command);
+  delay(200);
+  if(mySerial.available() > 0){
+    delay(200);
+    readAndShowEndSerial();
+    Serial.println();
+  }
+}
+
+void IncreaseSignalInternet(){ //total 2.4s
+  // Enable opam internet..will return error if query 2 times but that OK
+  int index = 0;
+  char command[20] = "AT+CSTT='CMNET'\n";
+  for(index = 0 ; index < 20; index++){
+    // Instead " to '
+    if(command[index] == 39){
+      command[index] = 34;
+    }
+  } 
+  Serial.write(command);
+  mySerial.write(command);
+  WaitMySerialAvailable();
+  if(mySerial.available() > 0){
+    delay(200);
+    readAndShowEndSerial();
+    Serial.println();
+  }
+}
+
+void KeepSignalInternetQuite(){ // total 2.4s
+  // Enable bring internet..will return error if query 2 times but that OK
+  char command[] = "AT+CIICR\n";
+  Serial.write(command);
+  mySerial.write(command);
+  WaitMySerialAvailable();
+  if(mySerial.available() > 0){
+    delay(200);
+    readAndShowEndSerial();
+    Serial.println();
+  }
+}
+
+void GetIpAdressSim800(){ // total 2.4s
+  // Get IP SIM800C...must be init if not will can't connect to server
+  char command[] = "AT+CIFSR\n";
+  Serial.write(command);
+  mySerial.write(command);
+  WaitMySerialAvailable();
+  if(mySerial.available() > 0){
+    delay(200);
+    readAndShowEndSerial();
+    Serial.println();
+  }
+}
+
+void ConnectToServer(){ //total 3s
+  // Connect server TCP port 747
+  int index = 0;
+  char command[50] = "AT+CIPSTART='TCP','42.113.127.207','747'\n";
+  for(index = 0 ; index < 50; index++){
+    if(command[index] == 39){
+      command[index] = 34;
+    }
+  } 
+  Serial.write(command);
+  mySerial.write(command);
+  WaitMySerialAvailable();
+  if(mySerial.available() > 0){
+    delay(200);
+    readAndShowEndSerial();
+    Serial.println();
+  }
+}
+
+void SendMessageToServer(){ // total 4.8s
+  // AT command send message to server
+  char command[] = "AT+CIPSEND\n";
+  Serial.write(command);
+  mySerial.write(command);
+  WaitMySerialAvailable();
+  if(mySerial.available() > 0){
+    delay(200);
+    readAndShowEndSerial();
+    Serial.println();
+  }
+  // Ready to send message
+  // Message to server with end of line is 0x1A(hex) = 26 enter = 13 and 10
+  Serial.write(locationGSM);
+  mySerial.write(locationGSM);
+  //Serial.write("AT+CLBS=1,1  +CLBS: 0,105.851599,21.000385,550    OK");
+  //mySerial.write("AT+CLBS=1,1  +CLBS: 0,105.851599,21.000385,550    OK");
+  mySerial.write(26);
+  mySerial.write(13);
+  mySerial.write(10);
+  WaitMySerialAvailable();
+  delay(3000);
+  if(mySerial.available() > 0){
+    delay(200);
+    readAndShowEndSerial();
+    Serial.println();
+  }
+}
+
+void CloseConnect(){ // total 0.4s
+  // Close connect
+  char command[] = "AT+CIPCLOSE\n";
+  Serial.write(command);
+  mySerial.write(command);
+  delay(200);
+  if(mySerial.available() > 0){
+    delay(200);
+    readAndShowEndSerial();
+    Serial.println("Close connect");
+  }
+}
+
+void EnableGPRSofGSM(){ //total 2.4s
+  // Enable opam internet..will return error if query 2 times but that OK
+  int index = 0;
+  char command[50] = "AT+SAPBR=3,1,'CONTYPE','GPRS'\n";
+  for(index = 0 ; index < 50; index++){
+    // Instead " to '
+    if(command[index] == 39){
+      command[index] = 34;
+    }
+  } 
+  Serial.write(command);
+  mySerial.write(command);
+  WaitMySerialAvailable();
+  if(mySerial.available() > 0){
+    delay(200);
+    readAndShowEndSerial();
+    Serial.println();
+  }
+}
+
+void EnableInternetOfGSM(){
+  int index = 0;
+  char command[50] = "AT+SAPBR=3,1,'APN','internet'\n";
+  for(index = 0 ; index < 50; index++){
+    if(command[index] == 39){
+      command[index] = 34;
+    }
+  } 
+  Serial.write(command);
+  mySerial.write(command);
+  WaitMySerialAvailable();
+  if(mySerial.available() > 0){
+    delay(200);
+    readAndShowEndSerial();
+    Serial.println();
+  }
+}
+
+void EnableGSM(){ // total 2.4s
+  char command[] = "AT+SAPBR=1,1\n";
+  Serial.write(command);
+  mySerial.write(command);
+  WaitMySerialAvailable();
+  if(mySerial.available() > 0){
+    delay(200);
+    readAndShowEndSerial();
+    Serial.println();
+  }
+}
+
+void DisableGSM(){ // total 2.4s
+  char command[] = "AT+SAPBR=0,1\n";
+  Serial.write(command);
+  mySerial.write(command);
+  WaitMySerialAvailable();
+  if(mySerial.available() > 0){
+    delay(200);
+    readAndShowEndSerial();
+    Serial.println();
+  }
+}
+
+void GetStringLocation(){ // total 2.4s
+  // Get IP SIM800C...must be init if not will can't connect to server
+  int index = 0;
+  char command[] = "AT+CLBS=1,1\n";
+  Serial.write(command);
+  mySerial.write(command);
+  WaitMySerialAvailable();
+  if(mySerial.available() > 0){
+    delay(200);
+    char mang[60] = "";
+    locationGSM[0] = mang[0];
+    int num = 0;
+    while(mySerial.available()>0)
+    {
+      char c = mySerial.read();
+      num++;
+      if( num > 14){
+        if ((c == 26) ||(c == 13)||(c == 10)){
+          c = ' ';
+        }
+        locationGSM[index] = c;
+        index++;
+      }
+    }
+    locationGSM[index] = '\0';
+  }
+}
+
+void QuickSetupConnectServer(){
+  //Step 1 .4s
+  EnableGPS();
+  // Step 2 4.8s
+  IncreaseSignalInternet();
+  KeepSignalInternetQuite();
+  //Step 3 2.4s
+  GetIpAdressSim800();
+  //Step 4 3s
+  ConnectToServer();
+}
+
+void QuickSetupGPSusingGSM(){
+  // Step 1
+  EnableGPRSofGSM();
+  // Step 2
+  EnableInternetOfGSM();
+  // Step 3
+  EnableGSM();
+}
+
+void setup() {
+   Serial.begin(9600);
+   Serial.println("Ready to Command");
+   mySerial.begin(9600);
+}
+
+void loop() {
+  Serial.println("Delay 3s..");
+  delay(3000);
+  QuickSetupConnectServer();
+  QuickSetupGPSusingGSM();
+  while(true){
+    GetStringLocation();
+    Serial.println("Message will send after 20s...");
+    delay(20000);
+    SendMessageToServer();
+  }
+  // Step 6 .4s
+  CloseConnect();
+  DisableGSM();
+  Serial.println("Delay 15s to reconnect...");
+  delay(15000);
+}

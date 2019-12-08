@@ -1,0 +1,152 @@
+#include <SoftwareSerial.h>
+SoftwareSerial mySerial(10, 11);//10(rx)=>tx 11(tx)=>rx
+void readEndSerial(){
+  while(mySerial.available()>0)
+  {
+    mySerial.read();
+  }
+}
+
+void readAndShowEndSerial(){
+  while(mySerial.available()>0)
+  {
+    Serial.write(mySerial.read());
+  }
+}
+
+bool isOK(char listChar[],int lenghthATCommand){
+  bool stt = false;
+  int fullLenghth = lenghthATCommand + 2;
+  int numOfChar = 0;
+  while(mySerial.available()>0){
+    char ch = mySerial.read();
+    if((numOfChar >= fullLenghth)&&(ch != listChar[numOfChar - fullLenghth])){
+      readEndSerial();
+      return false;
+    }
+    if(numOfChar - 1 == fullLenghth){
+      readEndSerial();
+      return true;
+    }
+    numOfChar++;
+    delay(3);
+  }
+}
+
+void MessageCustom(){
+  char str[] = "From Arduino With Love!!";
+  //return str;
+}
+
+void setup() {
+   Serial.begin(9600);
+   Serial.println("Ready to Command");
+   mySerial.begin(9600);
+}
+
+void loop() {
+  int index = 0;
+  Serial.println("Delay 3s..");
+  delay(3000);
+  // Enable GPRS
+  char command[] = "AT+CGATT=1\n";
+  Serial.write(command);
+  mySerial.write(command);
+    delay(200);
+  if(mySerial.available() > 0){
+    delay(200);
+    readAndShowEndSerial();
+    Serial.println();
+  }
+  // Enable opam internet..will return error if query 2 times but that OK
+  char command2[20] = "AT+CSTT='CMNET'\n";
+  for(index = 0 ; index < 20; index++){
+    if(command2[index] == 39){
+      command2[index] = 34;
+    }
+  } 
+  Serial.write(command2);
+  mySerial.write(command2);
+    delay(1000);
+  if(mySerial.available() > 0){
+    delay(500);
+    readAndShowEndSerial();
+    Serial.println();
+  }
+  // Enable bring internet..will return error if query 2 times but that OK
+  char command3[] = "AT+CIICR\n";
+  Serial.write(command3);
+  mySerial.write(command3);
+    delay(1000);
+  if(mySerial.available() > 0){
+    delay(500);
+    readAndShowEndSerial();
+    Serial.println();
+  }
+  // Get IP SIM800C...must be query if not will cannot connect to server
+  char command4[] = "AT+CIFSR\n";
+  Serial.write(command4);
+  mySerial.write(command4);
+    delay(1000);
+  if(mySerial.available() > 0){
+    delay(500);
+    readAndShowEndSerial();
+    Serial.println();
+  }
+  // Connect server TCP port 747
+  char command5[50] = "AT+CIPSTART='TCP','42.113.127.207','747'\n";
+  for(index = 0 ; index < 50; index++){
+    if(command5[index] == 39){
+      command5[index] = 34;
+    }
+  } 
+  Serial.write(command5);
+  mySerial.write(command5);
+    delay(1000);
+  if(mySerial.available() > 0){
+    delay(500);
+    readAndShowEndSerial();
+    Serial.println();
+  }
+  // at send message to server
+  char command6[] = "AT+CIPSEND\n";
+  int timesUp = 49;
+  while(true){
+  Serial.write(command6);
+  mySerial.write(command6);
+    delay(2000);
+  if(mySerial.available() > 0){
+    delay(500);
+    readAndShowEndSerial();
+    Serial.println();
+  }
+  // message to server with end of line is 0x1A(hex) = 26 enter = 13 and 10
+  char mess[] = "Arduino with love! ";
+  Serial.write(mess);
+  mySerial.write(mess);
+  mySerial.write(timesUp);
+  mySerial.write(26);
+  mySerial.write(13);
+  mySerial.write(10);
+  delay(2000);
+  if(mySerial.available() > 0){
+    delay(500);
+    readAndShowEndSerial();
+    Serial.println();
+  }
+  timesUp = timesUp + 1;
+  if (timesUp  == 59) break;
+  }
+  // close connect
+  char command7[] = "AT+CIPCLOSE\n";
+  Serial.write(command7);
+  mySerial.write(command7);
+    delay(1000);
+  if(mySerial.available() > 0){
+    delay(500);
+    readAndShowEndSerial();
+    Serial.println();
+  }
+  
+  delay(150000);
+}
